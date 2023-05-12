@@ -1,3 +1,4 @@
+import openai
 from functools import wraps
 from flask import request, Blueprint, render_template, jsonify, flash, \
     redirect, url_for
@@ -91,6 +92,31 @@ def product_search(page=1):
         'products.html', products=products.paginate(page=page, per_page=10)
     )
 
+
+@catalog.route('/product-search-gpt', methods=['GET', 'POST'])
+def product_search_gpt():
+    if request.method == 'POST':
+        query = request.form.get('query')
+
+        openai.api_key = app.config['OPENAI_KEY']
+
+        prompt = """Context: Ecommerce electronics website\n
+            Operation: Create search queries for a product\n
+            Product: """ + query
+
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            temperature=0.2,
+            max_tokens=60,
+            top_p=1.0,
+            frequency_penalty=0.5,
+            presence_penalty=0.0
+        )
+
+        return response['choices'][0][
+            'text'].strip('\n').split('\n')[1:]
+    return render_template('product-search-gpt-demo.html')
 
 @catalog.route('/category-create', methods=['POST',])
 def create_category():
